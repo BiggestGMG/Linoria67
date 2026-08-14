@@ -3714,8 +3714,11 @@ local function OnPlayerChangeDebounced()
     end)
 end
 
-Players.PlayerAdded:Connect(OnPlayerChangeDebounced);
-Players.PlayerRemoving:Connect(OnPlayerChangeDebounced);
+-- These listeners outlive individual widgets, so they must be library-owned and
+-- disconnected by Unload. Without tracking them, each compatible re-execution
+-- retains an old library closure and repeats player-special dropdown refreshes.
+Library:GiveSignal(Players.PlayerAdded:Connect(OnPlayerChangeDebounced));
+Library:GiveSignal(Players.PlayerRemoving:Connect(OnPlayerChangeDebounced));
 
 getgenv().Library = Library
 return Library
