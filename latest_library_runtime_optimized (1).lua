@@ -3604,12 +3604,14 @@ function Library:CreateWindow(...)
             end;
         end);
 
-        -- This was the first tab added, so we show it by default.
-        if #TabContainer:GetChildren() == 1 then
-            Tab:ShowTab();
-        end;
-
+        -- Select the first registered tab explicitly. This is intentionally
+        -- independent of TabContainer child count, because visual children such
+        -- as UICorners must not affect startup selection.
+        local IsFirstTab = next(Window.Tabs) == nil
         Window.Tabs[Name] = Tab;
+        if IsFirstTab then
+            Tab:ShowTab();
+        end
         return Tab;
     end;
 
