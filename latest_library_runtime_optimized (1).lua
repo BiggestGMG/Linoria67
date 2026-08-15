@@ -49,8 +49,8 @@ local Library = {
     Black = Color3.fromRGB(11, 10, 16); -- #0B0A10
     Font = Enum.Font.Gotham,
 
-    -- Applied once after external theme controls have been built, ensuring this
-    -- library's chosen defaults win over the upstream ThemeManager blue preset.
+    -- Exposed for explicit caller use; startup does not invoke this so saved
+    -- named or custom ThemeManager themes remain authoritative.
     DefaultPalette = {
         FontColor = Color3.fromRGB(237, 233, 254),
         MainColor = Color3.fromRGB(27, 25, 38),
@@ -3625,14 +3625,12 @@ function Library:CreateWindow(...)
             end;
         end);
 
-        -- Record the first added tab and activate it after all caller UI
-        -- construction and external theme setup have completed. This avoids
-        -- decorative-child and immediate-construction timing races.
+        -- Record the first added tab and activate it after caller UI
+        -- construction completes. This avoids decorative-child and immediate
+        -- construction-order timing races without changing saved theme choices.
         if Window.FirstTab == nil then
             Window.FirstTab = Tab
             task.defer(function()
-                task.wait()
-                Library:ApplyDefaultPalette()
                 if Window.FirstTab == Tab and TabFrame.Parent then
                     Tab:ShowTab();
                 end
