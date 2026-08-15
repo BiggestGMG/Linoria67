@@ -49,6 +49,16 @@ local Library = {
     Black = Color3.fromRGB(11, 10, 16); -- #0B0A10
     Font = Enum.Font.Gotham,
 
+    -- Applied once after external theme controls have been built, ensuring this
+    -- library's chosen defaults win over the upstream ThemeManager blue preset.
+    DefaultPalette = {
+        FontColor = Color3.fromRGB(237, 233, 254),
+        MainColor = Color3.fromRGB(27, 25, 38),
+        BackgroundColor = Color3.fromRGB(18, 17, 26),
+        AccentColor = Color3.fromRGB(168, 85, 247),
+        OutlineColor = Color3.fromRGB(57, 53, 68),
+    },
+
     OpenedFrames = {};
     DependencyBoxes = {};
 
@@ -421,6 +431,17 @@ function Library:UpdateColorsUsingRegistry()
             end
         end
     end
+end
+
+function Library:ApplyDefaultPalette()
+    for Name, Color in pairs(Library.DefaultPalette) do
+        Library[Name] = Color
+        if Options[Name] and Options[Name].Type == 'ColorPicker' then
+            Options[Name]:SetValueRGB(Color)
+        end
+    end
+    Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor)
+    Library:UpdateColorsUsingRegistry()
 end
 
 function Library:GiveSignal(Signal)
@@ -3604,14 +3625,20 @@ function Library:CreateWindow(...)
             end;
         end);
 
-        -- Select the first registered tab explicitly. This is intentionally
-        -- independent of TabContainer child count, because visual children such
-        -- as UICorners must not affect startup selection.
-        local IsFirstTab = next(Window.Tabs) == nil
-        Window.Tabs[Name] = Tab;
-        if IsFirstTab then
-            Tab:ShowTab();
+        -- Record the first added tab and activate it after all caller UI
+        -- construction and external theme setup have completed. This avoids
+        -- decorative-child and immediate-construction timing races.
+        if Window.FirstTab == nil then
+            Window.FirstTab = Tab
+            task.defer(function()
+                task.wait()
+                Library:ApplyDefaultPalette()
+                if Window.FirstTab == Tab and TabFrame.Parent then
+                    Tab:ShowTab();
+                end
+            end)
         end
+        Window.Tabs[Name] = Tab;
         return Tab;
     end;
 
