@@ -37,15 +37,17 @@ local Library = {
 
     HudRegistry = {};
 
-    FontColor = Color3.fromRGB(255, 255, 255);
-    MainColor = Color3.fromRGB(28, 28, 28);
-    BackgroundColor = Color3.fromRGB(20, 20, 20);
-    AccentColor = Color3.fromRGB(0, 85, 255);
-    OutlineColor = Color3.fromRGB(50, 50, 50);
-    RiskColor = Color3.fromRGB(255, 50, 50),
+    -- Compact modern-dark palette: layered graphite surfaces with a restrained
+    -- cool accent. Dimensions and widget behavior remain unchanged.
+    FontColor = Color3.fromRGB(226, 232, 240);
+    MainColor = Color3.fromRGB(28, 33, 43);
+    BackgroundColor = Color3.fromRGB(18, 22, 30);
+    AccentColor = Color3.fromRGB(96, 165, 250);
+    OutlineColor = Color3.fromRGB(55, 65, 81);
+    RiskColor = Color3.fromRGB(248, 113, 113),
 
-    Black = Color3.new(0, 0, 0);
-    Font = Enum.Font.Code,
+    Black = Color3.fromRGB(9, 11, 15);
+    Font = Enum.Font.Gotham,
 
     OpenedFrames = {};
     DependencyBoxes = {};
@@ -146,12 +148,14 @@ function Library:Create(Class, Properties)
 end;
 
 function Library:ApplyTextStroke(Inst)
+    -- Crisp modern text: retain the public helper but remove the dated heavy
+    -- outline and avoid creating an extra UIStroke instance per text element.
     Inst.TextStrokeTransparency = 1;
+end;
 
-    Library:Create('UIStroke', {
-        Color = Color3.new(0, 0, 0);
-        Thickness = 1;
-        LineJoinMode = Enum.LineJoinMode.Miter;
+function Library:ApplyCorner(Inst, Radius)
+    Library:Create('UICorner', {
+        CornerRadius = UDim.new(0, Radius or 3),
         Parent = Inst;
     });
 end;
@@ -1534,14 +1538,8 @@ do
                 Parent = Inner;
             });
 
-            Library:Create('UIGradient', {
-                Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(212, 212, 212))
-                });
-                Rotation = 90;
-                Parent = Inner;
-            });
+            Library:ApplyCorner(Outer, 3);
+            Library:ApplyCorner(Inner, 2);
 
             Library:AddToRegistry(Outer, {
                 BorderColor3 = 'Black';
@@ -1768,14 +1766,8 @@ do
             Library:AddToolTip(Info.Tooltip, TextBoxOuter)
         end
 
-        Library:Create('UIGradient', {
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(212, 212, 212))
-            });
-            Rotation = 90;
-            Parent = TextBoxInner;
-        });
+        Library:ApplyCorner(TextBoxOuter, 3);
+        Library:ApplyCorner(TextBoxInner, 2);
 
         local Container = Library:Create('Frame', {
             BackgroundTransparency = 1;
@@ -1924,6 +1916,8 @@ do
             BorderColor3 = 'Black';
         });
 
+        Library:ApplyCorner(ToggleOuter, 3);
+
         local ToggleInner = Library:Create('Frame', {
             BackgroundColor3 = Library.MainColor;
             BorderColor3 = Library.OutlineColor;
@@ -1932,6 +1926,8 @@ do
             ZIndex = 6;
             Parent = ToggleOuter;
         });
+
+        Library:ApplyCorner(ToggleInner, 2);
 
         Library:AddToRegistry(ToggleInner, {
             BackgroundColor3 = 'MainColor';
@@ -3080,6 +3076,7 @@ function Library:CreateWindow(...)
         Parent = ScreenGui;
     });
 
+    Library:ApplyCorner(Outer, 6);
     Library:MakeDraggable(Outer, 25);
 
     local Inner = Library:Create('Frame', {
@@ -3096,6 +3093,8 @@ function Library:CreateWindow(...)
         BackgroundColor3 = 'MainColor';
         BorderColor3 = 'AccentColor';
     });
+
+    Library:ApplyCorner(Inner, 5);
 
     local WindowLabel = Library:CreateLabel({
         Position = UDim2.new(0, 7, 0, 0);
@@ -3115,6 +3114,8 @@ function Library:CreateWindow(...)
         Parent = Inner;
     });
 
+    Library:ApplyCorner(MainSectionOuter, 4);
+
     Library:AddToRegistry(MainSectionOuter, {
         BackgroundColor3 = 'BackgroundColor';
         BorderColor3 = 'OutlineColor';
@@ -3129,6 +3130,8 @@ function Library:CreateWindow(...)
         ZIndex = 1;
         Parent = MainSectionOuter;
     });
+
+    Library:ApplyCorner(MainSectionInner, 3);
 
     Library:AddToRegistry(MainSectionInner, {
         BackgroundColor3 = 'BackgroundColor';
@@ -3157,8 +3160,10 @@ function Library:CreateWindow(...)
         ZIndex = 2;
         Parent = MainSectionInner;
     });
-    
 
+    Library:ApplyCorner(TabContainer, 3);
+    
+    
     Library:AddToRegistry(TabContainer, {
         BackgroundColor3 = 'MainColor';
         BorderColor3 = 'OutlineColor';
@@ -3183,6 +3188,8 @@ function Library:CreateWindow(...)
             ZIndex = 1;
             Parent = TabArea;
         });
+
+        Library:ApplyCorner(TabButton, 3);
 
         Library:AddToRegistry(TabButton, {
             BackgroundColor3 = 'BackgroundColor';
@@ -3303,6 +3310,8 @@ function Library:CreateWindow(...)
                 ZIndex = 2;
                 Parent = Info.Side == 1 and LeftSide or RightSide;
             });
+
+            Library:ApplyCorner(BoxOuter, 4);
 
             Library:AddToRegistry(BoxOuter, {
                 BackgroundColor3 = 'BackgroundColor';
