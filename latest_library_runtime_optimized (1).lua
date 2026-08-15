@@ -39,14 +39,14 @@ local Library = {
 
     -- Compact modern-dark palette: layered graphite surfaces with a restrained
     -- cool accent. Dimensions and widget behavior remain unchanged.
-    FontColor = Color3.fromRGB(226, 232, 240);
-    MainColor = Color3.fromRGB(28, 33, 43);
-    BackgroundColor = Color3.fromRGB(18, 22, 30);
-    AccentColor = Color3.fromRGB(96, 165, 250);
-    OutlineColor = Color3.fromRGB(55, 65, 81);
-    RiskColor = Color3.fromRGB(248, 113, 113),
+    FontColor = Color3.fromRGB(237, 233, 254); -- #EDE9FE
+    MainColor = Color3.fromRGB(27, 25, 38); -- #1B1926
+    BackgroundColor = Color3.fromRGB(18, 17, 26); -- #12111A
+    AccentColor = Color3.fromRGB(168, 85, 247); -- #A855F7
+    OutlineColor = Color3.fromRGB(57, 53, 68); -- #393544
+    RiskColor = Color3.fromRGB(192, 38, 74), -- #C0264A
 
-    Black = Color3.fromRGB(9, 11, 15);
+    Black = Color3.fromRGB(11, 10, 16); -- #0B0A10
     Font = Enum.Font.Gotham,
 
     OpenedFrames = {};
@@ -654,7 +654,7 @@ do
             Position = UDim2.new(0, 5, 0, 0);
             Size = UDim2.new(1, -5, 1, 0);
             Font = Library.Font;
-            PlaceholderColor3 = Color3.fromRGB(190, 190, 190);
+            PlaceholderColor3 = Color3.fromRGB(168, 161, 181); -- #A8A1B5
             PlaceholderText = 'Hex color',
             Text = '#FFFFFF',
             TextColor3 = Library.FontColor;
@@ -1787,7 +1787,7 @@ do
             Size = UDim2.fromScale(5, 1),
 
             Font = Library.Font;
-            PlaceholderColor3 = Color3.fromRGB(190, 190, 190);
+            PlaceholderColor3 = Color3.fromRGB(168, 161, 181); -- #A8A1B5
             PlaceholderText = Info.Placeholder or '';
 
             Text = Info.Default or '';
