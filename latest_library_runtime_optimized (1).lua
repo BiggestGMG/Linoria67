@@ -214,20 +214,20 @@ function Library:BindPointerDrag(StartInput, Update, Finished)
         if Finished then Finished() end
     end
 
-    MoveConnection = InputService.InputChanged:Connect(function(Input)
+    MoveConnection = Library:GiveSignal(InputService.InputChanged:Connect(function(Input)
         if not Active then return end
 
         if Input.UserInputType == Enum.UserInputType.MouseMovement
             or (StartInput.UserInputType == Enum.UserInputType.Touch and Input == StartInput) then
             Update(Input)
         end
-    end)
+    end))
 
-    EndConnection = StartInput.Changed:Connect(function()
+    EndConnection = Library:GiveSignal(StartInput.Changed:Connect(function()
         if StartInput.UserInputState == Enum.UserInputState.End then
             Cleanup()
         end
-    end)
+    end))
 
     Update(StartInput)
     return Cleanup
@@ -311,11 +311,11 @@ function Library:AddToolTip(InfoStr, HoverInstance)
         updateTooltipPos()
         Tooltip.Visible = true
 
-        tooltipMoveConn = InputService.InputChanged:Connect(function(input)
+        tooltipMoveConn = Library:GiveSignal(InputService.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement then
                 updateTooltipPos()
             end
-        end)
+        end))
     end)
 
     HoverInstance.MouseLeave:Connect(function()
