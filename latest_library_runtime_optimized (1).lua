@@ -47,7 +47,7 @@ local Library = {
     RiskColor = Color3.fromRGB(192, 38, 74), -- #C0264A
 
     Black = Color3.fromRGB(11, 10, 16); -- #0B0A10
-    Font = Enum.Font.Gotham,
+    Font = Enum.Font.GothamMedium,
 
     -- Exposed for explicit caller use; startup does not invoke this so saved
     -- named or custom ThemeManager themes remain authoritative.
@@ -165,7 +165,7 @@ end;
 
 function Library:ApplyCorner(Inst, Radius)
     Library:Create('UICorner', {
-        CornerRadius = UDim.new(0, Radius or 3),
+        CornerRadius = UDim.new(0, Radius or 6),
         Parent = Inst;
     });
 end;
@@ -1586,8 +1586,8 @@ do
                 Parent = Inner;
             });
 
-            Library:ApplyCorner(Outer, 3);
-            Library:ApplyCorner(Inner, 2);
+            Library:ApplyCorner(Outer, 6);
+            Library:ApplyCorner(Inner, 5);
 
             Library:AddToRegistry(Outer, {
                 BorderColor3 = 'Black';
@@ -1814,8 +1814,8 @@ do
             Library:AddToolTip(Info.Tooltip, TextBoxOuter)
         end
 
-        Library:ApplyCorner(TextBoxOuter, 3);
-        Library:ApplyCorner(TextBoxInner, 2);
+        Library:ApplyCorner(TextBoxOuter, 6);
+        Library:ApplyCorner(TextBoxInner, 5);
 
         local Container = Library:Create('Frame', {
             BackgroundTransparency = 1;
@@ -1964,7 +1964,7 @@ do
             BorderColor3 = 'Black';
         });
 
-        Library:ApplyCorner(ToggleOuter, 3);
+        Library:ApplyCorner(ToggleOuter, 6);
 
         local ToggleInner = Library:Create('Frame', {
             BackgroundColor3 = Library.MainColor;
@@ -1975,7 +1975,7 @@ do
             Parent = ToggleOuter;
         });
 
-        Library:ApplyCorner(ToggleInner, 2);
+        Library:ApplyCorner(ToggleInner, 5);
 
         Library:AddToRegistry(ToggleInner, {
             BackgroundColor3 = 'MainColor';
@@ -3173,7 +3173,7 @@ function Library:CreateWindow(...)
         Parent = Inner;
     });
 
-    Library:ApplyCorner(MainSectionOuter, 4);
+    Library:ApplyCorner(MainSectionOuter, 6);
 
     Library:AddToRegistry(MainSectionOuter, {
         BackgroundColor3 = 'BackgroundColor';
@@ -3190,7 +3190,7 @@ function Library:CreateWindow(...)
         Parent = MainSectionOuter;
     });
 
-    Library:ApplyCorner(MainSectionInner, 3);
+    Library:ApplyCorner(MainSectionInner, 5);
 
     Library:AddToRegistry(MainSectionInner, {
         BackgroundColor3 = 'BackgroundColor';
@@ -3220,7 +3220,7 @@ function Library:CreateWindow(...)
         Parent = MainSectionInner;
     });
 
-    Library:ApplyCorner(TabContainer, 3);
+    Library:ApplyCorner(TabContainer, 6);
     
     
     Library:AddToRegistry(TabContainer, {
@@ -3248,7 +3248,7 @@ function Library:CreateWindow(...)
             Parent = TabArea;
         });
 
-        Library:ApplyCorner(TabButton, 3);
+        Library:ApplyCorner(TabButton, 6);
 
         Library:AddToRegistry(TabButton, {
             BackgroundColor3 = 'BackgroundColor';
@@ -3370,7 +3370,7 @@ function Library:CreateWindow(...)
                 Parent = Info.Side == 1 and LeftSide or RightSide;
             });
 
-            Library:ApplyCorner(BoxOuter, 4);
+            Library:ApplyCorner(BoxOuter, 6);
 
             Library:AddToRegistry(BoxOuter, {
                 BackgroundColor3 = 'BackgroundColor';
