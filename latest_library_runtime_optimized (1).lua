@@ -120,13 +120,12 @@ function Library:SafeCallback(f, ...)
         return;
     end;
 
-    if not Library.NotifyOnError then
-        return f(...);
-    end;
-
+    -- Always pcall'd: one erroring callback must never kill the library's
+    -- input handler mid-dispatch. Errors surface only when the host opts in
+    -- via Library.NotifyOnError.
     local success, event = pcall(f, ...);
 
-    if not success then
+    if not success and Library.NotifyOnError then
         local _, i = event:find(":%d+: ");
 
         if not i then
@@ -134,6 +133,20 @@ function Library:SafeCallback(f, ...)
         end;
 
         return Library:Notify(event:sub(i + 1), 3);
+    end;
+end;
+
+function Library:StableSetter(Widget)
+    -- Wraps Widget.SetValue so a call re-entering the same widget from inside
+    -- its own callback chain is ignored instead of recursing.
+    local Setter = Widget.SetValue;
+    local Setting = false;
+
+    Widget.SetValue = function(...)
+        if Setting then return end;
+        Setting = true;
+        Setter(...);
+        Setting = false;
     end;
 end;
 
@@ -890,7 +903,7 @@ do
                         return
                     end
 
-                    Callback()
+                    Library:SafeCallback(Callback)
                 end)
             end
 
@@ -1338,7 +1351,7 @@ do
 
         function KeyPicker:OnChanged(Callback)
             KeyPicker.Changed = Callback
-            Callback(KeyPicker.Value)
+            Library:SafeCallback(Callback, KeyPicker.Value)
         end
 
         if ParentObj.Addons then
@@ -1868,6 +1881,8 @@ do
             Library:SafeCallback(Textbox.Changed, Textbox.Value);
         end;
 
+        Library:StableSetter(Textbox);
+
         if Textbox.Finished then
             Box.FocusLost:Connect(function(enter)
                 if not enter then return end
@@ -2050,6 +2065,8 @@ do
             Library:SafeCallback(Toggle.Changed, Toggle.Value);
             Library:UpdateDependencyBoxes();
         end;
+
+        Library:StableSetter(Toggle);
 
         ToggleRegion.InputBegan:Connect(function(Input)
             local Pointer = Library:GetPointerPosition(Input)
@@ -2239,6 +2256,8 @@ do
             Library:SafeCallback(Slider.Callback, Slider.Value);
             Library:SafeCallback(Slider.Changed, Slider.Value);
         end;
+
+        Library:StableSetter(Slider);
 
         SliderInner.InputBegan:Connect(function(Input)
             local Pointer = Library:GetPointerPosition(Input)
@@ -2673,6 +2692,8 @@ do
             Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
             Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
         end;
+
+        Library:StableSetter(Dropdown);
 
         DropdownOuter.InputBegan:Connect(function(Input)
             local Pointer = Library:GetPointerPosition(Input)
@@ -3740,8 +3761,9 @@ function Library:CreateWindow(...)
 
         BuildFadeTargets();
 
+        local FadeInfo = TweenInfo.new(FadeTime, Enum.EasingStyle.Linear)
         for _, Target in next, FadeTargets do
-            TweenService:Create(Target[1], TweenInfo.new(FadeTime, Enum.EasingStyle.Linear), {
+            TweenService:Create(Target[1], FadeInfo, {
                 [Target[2]] = Toggled and Target[3] or 1
             }):Play();
         end;
