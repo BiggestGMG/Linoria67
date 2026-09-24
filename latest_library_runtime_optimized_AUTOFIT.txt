@@ -1776,7 +1776,14 @@ do
                 Type = 'Button';
                 _MaxBoxWidth = 48;
             };
-            Funcs.AddKeyPicker(Host, Idx, Info);
+            -- AddKeyPicker lives on the FIRST local Funcs table of this file
+            -- (the addon block, exposed via BaseAddons.__index at its close);
+            -- the second local Funcs (AddBlank/AddButton/AddToggle/...) shadows
+            -- that name in this scope, which made Funcs.AddKeyPicker nil here
+            -- and crashed UI build at the first button. Wire the host through
+            -- BaseAddons exactly the way Label and Toggle instances are wired.
+            setmetatable(Host, BaseAddons);
+            Host:AddKeyPicker(Idx, Info);
             for _, ch in ipairs(Button.Inner:GetChildren()) do
                 if ch:IsA('Frame') and ch.Size ~= UDim2.new(1, 0, 1, 0) then
                     ch.AnchorPoint = Vector2.new(1, 0);
@@ -1787,6 +1794,7 @@ do
             Button.Label.Size = UDim2.new(1, -58, 1, 0);
             Button.Label.Position = UDim2.fromOffset(6, 0);
             Button.Label.TextTruncate = Enum.TextTruncate.AtEnd;
+            return Button;
         end;
 
 
