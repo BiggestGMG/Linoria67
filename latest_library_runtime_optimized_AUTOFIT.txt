@@ -1191,10 +1191,45 @@ do
             Size = UDim2.new(1, 0, 1, 0);
             TextSize = 13;
             Text = Info.Default;
-            TextWrapped = true;
+            TextWrapped = false;
+            TextTruncate = Enum.TextTruncate.AtEnd;
             ZIndex = 8;
             Parent = PickInner;
         });
+
+        -- Auto-size the box to its key text so 'None', 'RightControl' etc are
+        -- never clipped (cappable per host via _MaxBoxWidth).
+        local function UpdatePickerSize()
+            local w = 28;
+            pcall(function()
+                if DisplayLabel.Text ~= '' then
+                    w = math.max(28, select(1, Library:GetTextBounds(DisplayLabel.Text, Library.Font, 13)) + 10);
+                    if ParentObj._MaxBoxWidth then
+                        w = math.min(w, ParentObj._MaxBoxWidth);
+                    end;
+                end;
+            end);
+            PickOuter.Size = UDim2.new(0, w, 0, 15);
+        end;
+        UpdatePickerSize();
+
+        if ParentObj.Type == 'Toggle' and ParentObj.TextLabel == ToggleLabel then
+            -- Host the box just BEYOND the text label's right edge (the label
+            -- does not clip), so truncated text can never run under it, and
+            -- reserve 46px of the adaptive width for it.
+            ToggleLabel.ClipsDescendants = false;
+            ToggleLabel.TextTruncate = Enum.TextTruncate.AtEnd;
+            local list = ToggleLabel:FindFirstChildOfClass('UIListLayout');
+            if list then
+                list:Destroy();
+            end;
+            PickOuter.AnchorPoint = Vector2.new(0, 0);
+            PickOuter.Position = UDim2.new(1, 2, 0, 2);
+            ParentObj._KeyboxPad = 46;
+            if ParentObj.UpdateLabelWidth then
+                ParentObj.UpdateLabelWidth();
+            end;
+        end;
 
         local ModeSelectOuter = Library:Create('Frame', {
             BorderColor3 = Color3.new(0, 0, 0);
@@ -1288,6 +1323,8 @@ do
         end;
 
         function KeyPicker:Update()
+            UpdatePickerSize();
+
             if Info.NoUI then
                 return;
             end;
@@ -1296,7 +1333,7 @@ do
 
             ContainerLabel.Text = string.format('[%s] %s (%s)', KeyPicker.Value, Info.Text, KeyPicker.Mode);
 
-            ContainerLabel.Visible = true;
+            ContainerLabel.Visible = (KeyPicker.Value ~= 'None');
             ContainerLabel.TextColor3 = State and Library.AccentColor or Library.FontColor;
 
             Library.RegistryMap[ContainerLabel].Properties.TextColor3 = State and 'AccentColor' or 'FontColor';
@@ -1371,6 +1408,10 @@ do
 
         PickOuter.InputBegan:Connect(function(Input)
             local Pointer = Library:GetPointerPosition(Input)
+            if Picking then
+                -- already waiting for a key: never stack a second pick handler
+                return;
+            end;
             if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame(Pointer) then
                 Picking = true;
 
@@ -1395,15 +1436,45 @@ do
                 task.wait(0.2);
 
                 local Event;
-                Event = InputService.InputBegan:Connect(function(Input)
+                Event = InputService.InputBegan:Connect(function(Input, GameProcessed)
+                    -- Cancel inputs back out WITHOUT touching the current bind:
+                    -- ESC (game-processed), M1, and any input with no key name
+                    -- (touch/gamepad). Delete explicitly clears to 'None'.
+                    if GameProcessed
+                    or Input.KeyCode == Enum.KeyCode.Escape
+                    or Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        Break = true;
+                        Picking = false;
+                        DisplayLabel.Text = KeyPicker.Value;
+                        Event:Disconnect();
+                        return;
+                    end;
+
+                    if Input.KeyCode == Enum.KeyCode.Delete then
+                        Break = true;
+                        Picking = false;
+                        KeyPicker.Value = 'None';
+                        DisplayLabel.Text = 'None';
+                        KeyPicker:Update();
+                        Library:AttemptSave();
+                        Event:Disconnect();
+                        return;
+                    end;
+
                     local Key;
 
                     if Input.UserInputType == Enum.UserInputType.Keyboard then
                         Key = Input.KeyCode.Name;
-                    elseif Input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        Key = 'MB1';
                     elseif Input.UserInputType == Enum.UserInputType.MouseButton2 then
                         Key = 'MB2';
+                    end;
+
+                    if not Key then
+                        Break = true;
+                        Picking = false;
+                        DisplayLabel.Text = KeyPicker.Value;
+                        Event:Disconnect();
+                        return;
                     end;
 
                     Break = true;
@@ -1692,6 +1763,31 @@ do
             end
             return self
         end
+
+        -- Host a keypicker INSIDE the button row (right-aligned), and switch
+        -- the button text to left-aligned with a reserved strip so the two
+        -- never overlap.
+        function Button:AddKeyPicker(Idx, Info)
+            Info.Text = Info.Text or Button.Text;
+            Info.Default = Info.Default or 'None';
+            local Host = {
+                TextLabel = Button.Inner;
+                Container = Container;
+                Type = 'Button';
+                _MaxBoxWidth = 48;
+            };
+            Funcs.AddKeyPicker(Host, Idx, Info);
+            for _, ch in ipairs(Button.Inner:GetChildren()) do
+                if ch:IsA('Frame') and ch.Size ~= UDim2.new(1, 0, 1, 0) then
+                    ch.AnchorPoint = Vector2.new(1, 0);
+                    ch.Position = UDim2.new(1, -4, 0, 2);
+                end;
+            end;
+            Button.Label.TextXAlignment = Enum.TextXAlignment.Left;
+            Button.Label.Size = UDim2.new(1, -58, 1, 0);
+            Button.Label.Position = UDim2.fromOffset(6, 0);
+            Button.Label.TextTruncate = Enum.TextTruncate.AtEnd;
+        end;
 
 
         function Button:AddButton(...)
@@ -2014,6 +2110,21 @@ do
             SortOrder = Enum.SortOrder.LayoutOrder;
             Parent = ToggleLabel;
         });
+
+        -- Adaptive label width: keep the text inside its column and leave a
+        -- 46px strip on the right for the keybind box (AddKeyPicker hosts the
+        -- box just beyond this label's right edge). Toggles with a keybind
+        -- set _KeyboxPad = 46; the reserve keeps text clear of the box.
+        Toggle._KeyboxPad = 0;
+        local function UpdateToggleLabelWidth()
+            local width = Container.AbsoluteSize.X - 23 - Toggle._KeyboxPad;
+            if width > 60 then
+                ToggleLabel.Size = UDim2.new(0, width, 1, 0);
+            end;
+        end;
+        Toggle.UpdateLabelWidth = UpdateToggleLabelWidth;
+        UpdateToggleLabelWidth();
+        Library:GiveSignal(Container:GetPropertyChangedSignal('AbsoluteSize'):Connect(UpdateToggleLabelWidth));
 
         local ToggleRegion = Library:Create('Frame', {
             BackgroundTransparency = 1;
@@ -2408,7 +2519,7 @@ do
             Position = UDim2.new(0, 5, 0, 0);
             Size = UDim2.new(1, -5, 1, 0);
             TextSize = 14;
-            Text = '--';
+            Text = Info.Placeholder or '--';
             TextXAlignment = Enum.TextXAlignment.Left;
             TextWrapped = true;
             ZIndex = 7;
@@ -3006,6 +3117,10 @@ do
     Library.KeybindFrame = KeybindOuter;
     Library.KeybindContainer = KeybindContainer;
     Library:MakeDraggable(KeybindOuter);
+
+    function Library:SetKeybindFrameVisible(Bool)
+        Library.KeybindFrame.Visible = Bool and true or false;
+    end;
 end;
 
 function Library:SetWatermarkVisibility(Bool)
